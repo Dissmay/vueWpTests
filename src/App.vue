@@ -79,6 +79,9 @@
                 </v-list-item-title>
                 <v-list-item-subtitle v-for="correct in correctAnswers(question.id)" :key="correct.title">
                       Правильный ответ:{{correct.title}}
+                      <v-btn @click="verify(correct.id)">
+                        correct.title
+                      </v-btn>
                 </v-list-item-subtitle>
                 <v-card-actions>
                   <v-row justify="center">
@@ -162,7 +165,14 @@ export default {
     test:{
       title: 'Тесты к уроку 5',
       description: 'Ответьте на все вопросы, и тд и тп',
-      questions: []
+      questions: [
+        {
+          title: '1',
+          vars:[{title:'', id:uuidv4(), correctAnswer: false}],
+          id: uuidv4(),
+          correctAnswer:[]
+        }
+      ],
     },
   }),
   methods: {
@@ -171,7 +181,8 @@ export default {
           this.test.questions.push({
             title: this.question,
             vars: this.vars,
-            id: uuidv4()
+            id: uuidv4(),
+            correctAnswer:[]
           })
           this.questions =  ''
           this.vars =  []
@@ -204,7 +215,19 @@ export default {
     },
     addInputModal(){
         this.modalQuest.vars.push({title:'', id: uuidv4(), correctAnswer: false})
-    }
+    },
+    verify(id){
+      this.test.questions.forEach(element => {
+        element.vars.forEach(e => {
+             if(e.id === id ){
+               console.log(true);
+             }
+        })
+      });
+    },
+    // addTrueAnswerToMass(onevar, question){
+    //     question.correctAnswer.push(onevar)
+    // }
     },
     computed: {
      
@@ -239,9 +262,6 @@ export default {
      return data.token
     })
     console.log(resToken);
-    
-
-
   
     //  await fetch('http://vpvue.use-effect.xyz/wp-json/add/test/vl',{
     //   method: 'POST',
