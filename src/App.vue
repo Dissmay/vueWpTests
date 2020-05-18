@@ -6,14 +6,14 @@
         <v-form ref="form" v-model="valid">
           <v-text-field
             v-model="question"
-            label="question"
+            label="Вопрос"
             :rules="[ v => !!v || 'Name is required']"
             required
           ></v-text-field>
           <v-layout row v-for="key in vars" :key="key.id">
             <v-text-field
               required
-              label="Введите вопрос"
+              label="Вариант ответа"
               :rules="[ v => !!v || 'Name is required']"
               v-model="key.title"
             ></v-text-field>
@@ -30,7 +30,7 @@
             class="mr-4"
             @click="createTest()"
           >
-            Создать тест
+            {{createQuestion}}
           </v-btn>
           <v-btn @click="addQuestion">
               Добавить вопрос
@@ -41,14 +41,14 @@
     <div>
       <v-text-field
         required
-        label="Введите вопрос"
+        label="Название теста"
         :rules="[ v => !!v || 'Name is required']"
         v-model="test.title"
         class="ml-10 mr-10"
       ></v-text-field>
        <v-text-field
         required
-        label="Введите вопрос"
+        label="Описание теста"
         :rules="[ v => !!v || 'Name is required']"
         v-model="test.description"
         class="ml-10 mr-10"
@@ -58,30 +58,30 @@
     <v-layout row>
       <v-flex xs12 sm6 offset-sm3 mt-10  class="d-flex justify-space-between mb-6 flex-wrap">
         <v-card
-            class="mx-auto"
-            max-width="344"
+            class="mx-auto mb-5"
+            min-width="600"
             outlined
             v-for="question in test.questions"
             :key="question.id"
           >
-          <v-list-item three-line>
+            <v-list-item three-line>
             <v-list-item-content>
                 <div class="overline mb-4">{{question.title}}</div>
                 <v-list-item-title 
-                  class="headline mb-1 " 
+                  class="headline mb-1" 
                   v-for="oneVar in question.vars" 
                   v-bind:key="oneVar.id"
                   > 
                    <v-row justify="space-around">
-                      <p class="ma-2">{{oneVar.title}}</p>
+                      <p class="ma-2 pl-5 pr-5">{{oneVar.title}}</p>
                     <v-switch v-model="oneVar.correctAnswer" class="ma-2" ></v-switch>
                   </v-row>
                 </v-list-item-title>
                 <v-list-item-subtitle v-for="correct in correctAnswers(question.id)" :key="correct.title">
                       Правильный ответ:{{correct.title}}
-                      <v-btn @click="verify(correct.id)">
+                      <!-- <v-btn @click="verify(correct.id)">
                         correct.title
-                      </v-btn>
+                      </v-btn> -->
                 </v-list-item-subtitle>
                 <v-card-actions>
                   <v-row justify="center">
@@ -89,67 +89,78 @@
                     color="primary"
                     dark
                     @click.stop="editQuestion(question.id)"
+                    
                     >
+                    
                     Редактировать
                     </v-btn>
                   </v-row>
                 </v-card-actions>
             </v-list-item-content>
           </v-list-item>
+         
         </v-card>
       </v-flex>
     </v-layout>
   </v-layout> 
-</v-content>
+
+      <v-btn :disabled="!sendTestValid"  class="btnRight mr-10" @click="sendTest()">{{error || send}}</v-btn>
+       
+  </v-content>
   <v-dialog
     v-model="dialog"
-    max-width="800"
+    min-width="100%"
+    persistent
     >
-    <v-card >
-    <v-text-field
-      class="ml-5 mr-5"
-      :value="modalQuest.title"
-      :rules="[ v => !!v || 'Name is required']"
-      required
-      v-model="modalQuest.title"
-    ></v-text-field>
-    <v-layout class="ml-10 mr-10" v-for="key in modalQuest.vars" :key="key.id">
+    <v-form ref="form" v-model="validModal">
+      <v-card >
       <v-text-field
-        required
-        label="Введите вопрос"
+        class="ml-5 mr-5"
+        :value="modalQuest.title"
         :rules="[ v => !!v || 'Name is required']"
-        v-model="key.title"
+        label="Вопрос"
+        required
+        v-model="modalQuest.title"
       ></v-text-field>
-      <v-btn
+      <v-layout class="ml-10 mr-10" v-for="key in modalQuest.vars" :key="key.id">
+        <v-text-field
+          required
+          label="Вариант ответа"
+          :rules="[ v => !!v || 'Name is required']"
+          v-model="key.title"
+        ></v-text-field>
+        <v-btn
+          color="green darken-1"
+          text
+          @click="deleteVarModal(key.id)"
+        >
+        Удалить вариант ответа
+        </v-btn>
+      </v-layout>
+      <v-card-actions>
+        <v-spacer></v-spacer>
+        <v-btn
         color="green darken-1"
         text
-        @click="deleteVarModal(key.id)"
-      >
-      Удалить инпут
-      </v-btn>
-    </v-layout>
-    <v-card-actions>
-      <v-spacer></v-spacer>
-      <v-btn
-      color="green darken-1"
-      text
-      @click="addInputModal()"
-      >
-      Добавить инпут
-      </v-btn>
+        @click="addInputModal()"
+        >
+        Добавить вариант ответа
+        </v-btn>
 
-      <v-btn
-      color="green darken-1"
-      text
-      @click="dialog = false"
-      >
-      Сохранить вопрос
-      </v-btn>
-    </v-card-actions>
-    </v-card>
+        <v-btn
+        color="green darken-1"
+        text
+        @click="dialog = false"
+         :disabled="!validModal"
+        >
+        Сохранить вопрос
+        </v-btn>
+      </v-card-actions>
+      </v-card>
+    </v-form>  
   </v-dialog>
+ {{varsCorrect}}
 </v-app>
-
 </template>
 
 <script>
@@ -158,26 +169,29 @@ export default {
   name: 'App',
   data: () => ({
     valid: true,
+    validModal:true,
+    sendTestValid: false,
+    dialog: false,
+    createQuestion: 'Отправить',
     question: 'this это:',
     vars: [],
-    dialog: false,
     modalQuest:{},
     test:{
-      title: 'Тесты к уроку 5',
-      description: 'Ответьте на все вопросы, и тд и тп',
+      title: '',
+      description: '',
       questions: [
-        {
-          title: '1',
-          vars:[{title:'', id:uuidv4(), correctAnswer: false}],
-          id: uuidv4(),
-          correctAnswer:[]
-        }
+        // {
+        //   title: '1',
+        //   vars:[{title:'', id:uuidv4(), correctAnswer: false}],
+        //   id: uuidv4(),
+        //   correctAnswer:[]
+        // }
       ],
     },
   }),
   methods: {
     createTest(){
-      if(this.$refs.form.validate()){
+      if(this.$refs.form.validate() && this.vars.length >= 2 && this.varsCorrect.length >= 1 ){
           this.test.questions.push({
             title: this.question,
             vars: this.vars,
@@ -186,6 +200,10 @@ export default {
           })
           this.questions =  ''
           this.vars =  []
+          this.sendTestValid = true
+          this.createQuestion = 'Отправить'
+      }else{
+        this.createQuestion = 'Нужно отметить верный результат либо добавить минимум 2 варианта ответа'
       }
     },
     addQuestion(){
@@ -220,7 +238,7 @@ export default {
       this.test.questions.forEach(element => {
         element.vars.forEach(e => {
              if(e.id === id ){
-               console.log(true);
+               console.log(true)
              }
         })
       });
@@ -228,10 +246,49 @@ export default {
     // addTrueAnswerToMass(onevar, question){
     //     question.correctAnswer.push(onevar)
     // }
+    sendTest(){
+      if(this.test.title !== '' &&  this.test.description !== '' && this.test.questions.length >= 1){
+        console.log(this.test);
+        
+      }else{
+          this.sendTestValid = false
+      }
     },
-    computed: {
+    
+  },
+  computed :{
+   error(){
+     let msg;
+      if(this.sendTestValid == false){
+        msg = 'Не заполнил обязательные поля'
+     }
+     if(this.sendTestValid == true){
+       msg = 'Отправить'
+     }
+     return msg
+   },
+   varsCorrect(){
+     return this.vars.filter(e => e.correctAnswer == true)
      
+   }
+  },
+  watch: {
+    'test.title' : function(val){
+        if(this.test.title !== '' &&  val.length !== '' && this.test.questions.length >= 1){
+          this.sendTestValid = true
+        }else{
+          this.sendTestValid = false
+        }
     },
+    'test.description' : function(val){
+        if(this.test.title !== '' &&  val.length !== '' && this.test.questions.length >= 1){
+          this.sendTestValid = true
+        }else{
+          this.sendTestValid = false
+        }
+    },
+    },
+
   async created(){
     const receiveJwtToken = {
       'username': 'Dissmay',
@@ -274,3 +331,11 @@ export default {
   }
 };
 </script>
+
+
+<style  scoped>
+  .btnRight{
+    float: right;
+  }
+  
+</style>
