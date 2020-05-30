@@ -1,89 +1,51 @@
 <template>
 <v-app dark>
   <div class="text-center mt-10 mb-10">
-    <v-btn rounded color="alert" dark>Все тесты</v-btn>
+    <v-btn rounded color="alert" dark x-large @click="switchComponents">
+      {{allTestsBtnName}}
+    </v-btn>
   </div>
-    <v-divider></v-divider>
-  <v-content>
+  <v-divider></v-divider>
+  <v-content v-if="!allTestsIf">
     <alert :msgSendTest="msgSendTest"></alert>
     <titleDescription :test="test"></titleDescription>
     <formQuestion :test='test' v-on:testSendvalid="testSendvalid"></formQuestion>
-    <v-layout>
-      <v-layout row>
-        <v-flex xs12 sm6 offset-sm3 mt-10  class="d-flex justify-space-between mb-6 flex-wrap">
-          <v-card
-              class="mx-auto mb-5"
-              min-width="600"
-              outlined
-              v-for="question in test.questions"
-              :key="question.id"
-          >
-              <v-list-item three-line>
-                <v-list-item-content>
-                    <div class="overline ma-2 mb-4"><h2>{{question.title}}</h2></div>
-                    <v-list-item-title 
-                      class="headline mb-1" 
-                      v-for="oneVar in question.vars" 
-                      v-bind:key="oneVar.id"
-                      > 
-                      <v-row justify="space-around">
-                        <p class="ma-2 pl-5 pr-5" >{{oneVar.title}}</p>
-                      </v-row>
-                    </v-list-item-title>
-                    <v-list-item-subtitle v-for="correct in correctAnswers(question.id)" :key="correct.title">
-                      <h2 class="ma-2">
-                        <span>Правильный ответ: {{correct.title}}</span> 
-                      </h2> 
-                    </v-list-item-subtitle>
-                    <v-card-actions>
-                      <v-row justify="center">
-                        <v-btn
-                        color="primary"
-                        dark
-                        text
-                        @click.stop="editQuestion(question.id)"
-                        >
-                        Редактировать
-                        <v-icon class="ma-2">mdi-pencil</v-icon>
-                        </v-btn>
-                      </v-row>
-                    </v-card-actions>
-                </v-list-item-content>
-              </v-list-item>
-          </v-card>
-        </v-flex>
-      </v-layout>
-    </v-layout> 
-    <v-btn :disabled="!sendTestValid" color="primary"  class="btnRight mr-10" @click="sendTest()">{{error}}
+    <listQuestions :test="test" v-on:correctAnswers="correctAnswers" v-on:editQuestion="editQuestion"></listQuestions>
+    <v-btn :disabled="!sendTestValid" color="primary" x-large  class="btnRight mr-10" @click="sendTest">{{error}}
       <v-icon dark right>mdi-checkbox-marked-circle</v-icon>
     </v-btn>
-    
-  </v-content>  
-    <modal 
-      :dialog="dialog" 
-      :modalQuest="modalQuest" 
-      :modalQuestion="modalQuestion"
-      v-on:deleteVarModal="deleteVarModal"
-      v-on:addInputModal="addInputModal"
-      v-on:validModals="validModals"
-    >
-    </modal>
+  </v-content> 
+  <v-content v-else>
+    <allTests :token="token"></allTests>
+  </v-content> 
+  <modalEditQuestion 
+    :dialog="dialog" 
+    :modalQuest="modalQuest" 
+    :modalQuestion="modalQuestion"
+    v-on:deleteVarModal="deleteVarModal"
+    v-on:addInputModal="addInputModal"
+    v-on:validModals="validModals"
+  >
+  </modalEditQuestion>
 </v-app>
 </template>
 
 <script>
   import { v4 as uuidv4 } from 'uuid';
   import formQuestion from './components/formQuestion'
-  import alert from './components/alert'
-  import modal from './components/modalEditQustion'
+  import listQuestions from './components/listQuestions'
+  import alert from './components/alerts/alert'
+  import modalEditQuestion from './components/modals/modalEditQuestion'
   import titleDescription from './components/titleDescriptionInputs'
-
+  import allTests from './components/allTests'
   export default {
     components:{
       formQuestion,
       alert,
-      modal,
-      titleDescription
+      modalEditQuestion,
+      titleDescription,
+      allTests,
+      listQuestions
     },
     name: 'App',
     data: () => ({
@@ -94,6 +56,8 @@
       modalQuestion: 'Отправить',
       msgSendTest: false,
       modalQuest:{},
+      allTestsIf:false,
+      allTestsBtnName: 'Все тесты',
       test:{
         title: '',
         description: '',
@@ -139,18 +103,24 @@
         this.sendTestValid = true
         console.log(this.sendTestValid);
       },
-      // addTrueAnswerToMass(onevar, question){
-      //     question.correctAnswer.push(onevar)
-      // }
       async sendTest(){
         if(this.test.title !== '' &&  this.test.description !== '' && this.test.questions.length >= 1){
+            this.sendTestValid = false;
             let json = this.test;
-            await fetch('http://vpvue.use-effect.xyz/wp-json/add/test/vl',{
+            json.questions.forEach(q => {
+              q.vars.map(e=> {
+                if(e.correctAnswer == true){
+                q.correctAnswer.push(e)
+                }
+              })
+            })
+            let title = this.test.title
+            fetch('http://vpvue.use-effect.xyz/wp-json/add/test/vl',{
             method: 'POST',
-            body:JSON.stringify({json}),
+            body:JSON.stringify({json, title}),
             headers: {
               'Authorization': 'Bearer '+this.token,
-              'Content-Type': 'application/json;charset:UTF-8;'
+              'Content-Type': 'application/json;charset=UTF-8;',
             }
             })
             this.modalQuest = {}
@@ -161,7 +131,7 @@
                 // {
                 //   title: '1',
                 //   vars:[{title:'', id:uuidv4(), correctAnswer: false}],
-                //   id: uuidv4(),
+                //   id: uuidv4(), 
                 //   correctAnswer:[]
                 // }
               ],
@@ -177,7 +147,6 @@
       },
       validModals(){
         arguments[0].forEach(e => {
-          
           if(e.correctAnswer == true && arguments[0].length >= 2){
             this.dialog = false
             this.validModal = true
@@ -186,22 +155,30 @@
             this.modalQuestion = 'Нужно отметить верный результат и добавить минимум два варианта ответа'
           }
         })
+      },
+      switchComponents(){
+        this.allTestsIf = !this.allTestsIf
+        if(!this.allTestsIf){
+          this.allTestsBtnName = 'Все тесты'
+        }else{
+         this.allTestsBtnName = 'Создать тест'
+        }
       }
     },
     computed :{
-    error(){
-      let msg;
-        if(this.sendTestValid == false){
-          msg = 'Не заполнил обязательные поля'
+      error(){
+        let msg;
+          if(this.sendTestValid == false){
+            msg = 'Не заполнил обязательные поля'
+        }
+        if(this.sendTestValid == true){
+          msg = 'Отправить'
+        }
+        return msg
+      },
+      varsCorrect(){
+        return this.vars.filter(e => e.correctAnswer == true)
       }
-      if(this.sendTestValid == true){
-        msg = 'Отправить'
-      }
-      return msg
-    },
-    varsCorrect(){
-      return this.vars.filter(e => e.correctAnswer == true)
-    }
     },
     watch: {
       'test.title' : function(val){
@@ -212,15 +189,14 @@
           }
       },
       'test.description' : function(val){
-          if(this.test.title !== '' &&  val.length !== '' && this.test.questions.length >= 1){
-            this.sendTestValid = true
-          }else{
-            this.sendTestValid = false
-          }
+        if(this.test.title !== '' &&  val.length !== '' && this.test.questions.length >= 1){
+          this.sendTestValid = true
+        }else{
+          this.sendTestValid = false
+        }
       },
-      
-      },
-
+        
+    },
     async created(){
       const receiveJwtToken = {
         'username': 'Dissmay',
@@ -238,7 +214,7 @@
       //         },
       //       ]
       // }
-    let resToken = await  fetch('http://vpvue.use-effect.xyz/wp-json/jwt-auth/v1/token', {
+      let resToken = await  fetch('http://vpvue.use-effect.xyz/wp-json/jwt-auth/v1/token', {
         method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -248,7 +224,7 @@
       })
       .then(res => res.json())
       .then(data => {
-      return data.token
+        return data.token
       })
       this.token = resToken
     

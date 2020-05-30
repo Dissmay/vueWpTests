@@ -32,7 +32,7 @@
             {{createQuestion}}
           </v-btn>
           <v-btn @click="addQuestion">
-              Добавить вопрос
+              Добавить вариант ответа
           </v-btn>
         </v-form>
       </v-flex>
